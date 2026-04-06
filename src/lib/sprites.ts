@@ -23,7 +23,10 @@ export interface ServiceState {
 
 export interface ServiceInfo {
   name: string;
-  config: ServiceConfig;
+  cmd: string;
+  args?: string[];
+  httpPort?: number;
+  needs?: string[];
   state?: ServiceState;
 }
 

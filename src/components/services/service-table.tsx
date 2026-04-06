@@ -76,9 +76,9 @@ function ServiceRow({
     <TableRow className={isPending ? "opacity-50" : undefined}>
       <TableCell className="font-mono">{service.name}</TableCell>
       <TableCell className="font-mono max-w-[200px] truncate">
-        {service.config.cmd}
-        {service.config.args?.length
-          ? ` ${service.config.args.join(" ")}`
+        {service.cmd}
+        {service.args?.length
+          ? ` ${service.args.join(" ")}`
           : ""}
       </TableCell>
       <TableCell>
@@ -90,7 +90,7 @@ function ServiceRow({
         </Badge>
       </TableCell>
       <TableCell className="font-mono">
-        {service.config.httpPort ?? "-"}
+        {service.httpPort ?? "-"}
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-1">
