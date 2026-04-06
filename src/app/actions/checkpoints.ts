@@ -1,12 +1,11 @@
 "use server";
 
-import { auth } from "@/auth";
+import { requireAuth } from "@/lib/dev-auth";
 import { getSprite } from "@/lib/sprites";
 import { revalidatePath } from "next/cache";
 
 export async function createCheckpoint(spriteName: string, formData: FormData) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requireAuth();
 
   const comment = (formData.get("comment") as string) || undefined;
   const sprite = await getSprite(spriteName);
@@ -20,8 +19,7 @@ export async function restoreCheckpoint(
   spriteName: string,
   checkpointId: string
 ) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requireAuth();
 
   const sprite = await getSprite(spriteName);
   const resp = await sprite.restoreCheckpoint(checkpointId);

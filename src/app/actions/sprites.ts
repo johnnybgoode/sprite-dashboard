@@ -1,12 +1,11 @@
 "use server";
 
-import { auth } from "@/auth";
+import { requireAuth } from "@/lib/dev-auth";
 import { getClient, getSprite } from "@/lib/sprites";
 import { revalidatePath } from "next/cache";
 
 export async function listSprites() {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requireAuth();
 
   const client = getClient();
   const sprites = await client.listAllSprites();
@@ -20,8 +19,7 @@ export async function listSprites() {
 }
 
 export async function createSprite(formData: FormData) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requireAuth();
 
   const name = formData.get("name") as string;
   const ramMB = parseInt(formData.get("ramMB") as string) || 512;
@@ -35,8 +33,7 @@ export async function createSprite(formData: FormData) {
 }
 
 export async function deleteSprite(name: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requireAuth();
 
   const client = getClient();
   await client.deleteSprite(name);
@@ -44,8 +41,7 @@ export async function deleteSprite(name: string) {
 }
 
 export async function stopSprite(name: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requireAuth();
 
   const sprite = await getSprite(name);
   await sprite.exec("poweroff");
@@ -53,8 +49,7 @@ export async function stopSprite(name: string) {
 }
 
 export async function upgradeSprite(name: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requireAuth();
 
   const client = getClient();
   await client.upgradeSprite(name);

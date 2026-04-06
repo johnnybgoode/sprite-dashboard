@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export default function SignInPage() {
+  const isDev = process.env.NODE_ENV === "development";
+
   return (
     <div className="flex min-h-screen items-center justify-center">
       <Card className="w-full max-w-sm">
@@ -12,7 +14,7 @@ export default function SignInPage() {
             Sign in to manage your cloud VMs
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <form
             action={async () => {
               "use server";
@@ -30,6 +32,18 @@ export default function SignInPage() {
               Sign in with GitHub
             </Button>
           </form>
+          {isDev && (
+            <form
+              action={async () => {
+                "use server";
+                await signIn("dev", { redirectTo: "/sprites" });
+              }}
+            >
+              <Button type="submit" variant="outline" className="w-full" size="lg">
+                Sign in as Dev User
+              </Button>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>

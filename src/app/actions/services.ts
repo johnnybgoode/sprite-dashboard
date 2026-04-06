@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@/auth";
+import { requireAuth } from "@/lib/dev-auth";
 import {
   createService as apiCreateService,
   startService as apiStartService,
@@ -11,8 +11,7 @@ import {
 import { revalidatePath } from "next/cache";
 
 export async function createService(spriteName: string, formData: FormData) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requireAuth();
 
   const name = formData.get("name") as string;
   const cmd = formData.get("cmd") as string;
@@ -29,24 +28,21 @@ export async function createService(spriteName: string, formData: FormData) {
 }
 
 export async function startService(spriteName: string, serviceName: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requireAuth();
 
   await apiStartService(spriteName, serviceName);
   revalidatePath(`/sprites/${spriteName}/services`);
 }
 
 export async function stopService(spriteName: string, serviceName: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requireAuth();
 
   await apiStopService(spriteName, serviceName);
   revalidatePath(`/sprites/${spriteName}/services`);
 }
 
 export async function deleteService(spriteName: string, serviceName: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requireAuth();
 
   await apiDeleteService(spriteName, serviceName);
   revalidatePath(`/sprites/${spriteName}/services`);
@@ -57,8 +53,7 @@ export async function signalService(
   serviceName: string,
   signal: string
 ) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requireAuth();
 
   await apiSignalService(spriteName, serviceName, signal);
   revalidatePath(`/sprites/${spriteName}/services`);

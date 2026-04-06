@@ -1,11 +1,10 @@
 "use server";
 
-import { auth } from "@/auth";
+import { requireAuth } from "@/lib/dev-auth";
 import { getSprite } from "@/lib/sprites";
 
 export async function execCommand(spriteName: string, command: string) {
-  const session = await auth();
-  if (!session) throw new Error("Unauthorized");
+  await requireAuth();
 
   const sprite = await getSprite(spriteName);
   const result = await sprite.exec(command);
