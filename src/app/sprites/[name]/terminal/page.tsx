@@ -1,9 +1,17 @@
+import { ExecBar } from "@/components/terminal/exec-bar";
+
 export const dynamic = "force-dynamic";
 
-export default function TerminalPage() {
+export default async function TerminalPage({
+  params,
+}: {
+  params: Promise<{ name: string }>;
+}) {
+  const { name } = await params;
+
   return (
-    <div className="text-muted-foreground font-mono text-sm py-8 text-center">
-      Terminal — coming soon
+    <div className="space-y-4">
+      <ExecBar spriteName={name} />
     </div>
   );
 }
