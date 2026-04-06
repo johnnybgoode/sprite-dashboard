@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { requireAuth } from "@/lib/dev-auth";
 import { getSprite } from "@/lib/sprites";
 import { getSession, setSession, deleteSession } from "@/lib/terminal-store";
 import { NextRequest } from "next/server";
@@ -10,8 +10,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ name: string }> }
 ) {
-  const session = await auth();
-  if (!session) {
+  try {
+    await requireAuth();
+  } catch {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -38,8 +39,6 @@ export async function GET(
             detachable: true,
           });
         }
-
-        await cmd.start();
 
         // Generate a session key for the store
         const sessionKey = `${name}:${Date.now()}`;
@@ -120,8 +119,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ name: string }> }
 ) {
-  const session = await auth();
-  if (!session) {
+  try {
+    await requireAuth();
+  } catch {
     return new Response("Unauthorized", { status: 401 });
   }
 
