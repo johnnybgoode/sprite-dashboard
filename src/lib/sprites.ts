@@ -60,11 +60,11 @@ export async function createService(
   config: ServiceConfig
 ): Promise<void> {
   const response = await fetch(
-    `${spriteBaseURL()}/v1/sprites/${spriteName}/services`,
+    `${spriteBaseURL()}/v1/sprites/${spriteName}/services/${name}`,
     {
-      method: "POST",
+      method: "PUT",
       headers: spriteApiHeaders(),
-      body: JSON.stringify({ name, ...config }),
+      body: JSON.stringify(config),
     }
   );
   if (!response.ok) {
@@ -133,11 +133,11 @@ export async function signalService(
   signal: string
 ): Promise<void> {
   const response = await fetch(
-    `${spriteBaseURL()}/v1/sprites/${spriteName}/services/${serviceName}/signal`,
+    `${spriteBaseURL()}/v1/sprites/${spriteName}/services/signal`,
     {
       method: "POST",
       headers: spriteApiHeaders(),
-      body: JSON.stringify({ signal }),
+      body: JSON.stringify({ name: serviceName, signal }),
     }
   );
   if (!response.ok) {
