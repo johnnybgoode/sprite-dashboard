@@ -16,7 +16,7 @@ export function SpriteDetailTabs({ name }: { name: string }) {
   const pathname = usePathname();
 
   return (
-    <div className="flex gap-1 border-b">
+    <div className="flex gap-1 border-b overflow-x-auto">
       {tabs.map((tab) => {
         const href = `/sprites/${name}/${tab.href}`;
         const isActive = pathname === href;
@@ -26,7 +26,7 @@ export function SpriteDetailTabs({ name }: { name: string }) {
             key={tab.href}
             href={href}
             className={cn(
-              "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+              "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0",
               isActive
                 ? "border-foreground text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground"
