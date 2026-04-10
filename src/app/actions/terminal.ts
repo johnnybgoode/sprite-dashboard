@@ -7,7 +7,7 @@ export async function execCommand(spriteName: string, command: string) {
   await requireAuth();
 
   const sprite = await getSprite(spriteName);
-  const result = await sprite.exec(command);
+  const result = await sprite.execFile("bash", ["-c", command]);
 
   return {
     stdout:
