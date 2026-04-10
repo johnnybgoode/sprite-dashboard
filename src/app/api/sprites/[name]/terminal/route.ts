@@ -5,6 +5,8 @@ import { NextRequest } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+const KEEPALIVE_INTERVAL_MS = 15_000;
+
 // GET — SSE stream for terminal output
 export async function GET(
   request: NextRequest,
@@ -27,29 +29,56 @@ export async function GET(
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
+      let keepaliveTimer: ReturnType<typeof setInterval> | null = null;
+
       try {
         let cmd;
+        let spriteSessionId: string | undefined;
+
         if (attachId) {
           cmd = sprite.attachSession(attachId);
+          spriteSessionId = attachId;
         } else {
           cmd = sprite.createSession("bash", [], {
             tty: true,
             rows,
             cols,
             detachable: true,
+            env: { TERM: "xterm-256color" },
           });
+
+          // Look up the session ID from the sprite so the client can reconnect
+          try {
+            const sessions = await sprite.listSessions();
+            if (sessions.length > 0) {
+              // Most recent session is the one we just created
+              const latest = sessions[sessions.length - 1];
+              spriteSessionId = latest.id;
+            }
+          } catch {
+            // Non-fatal — reconnect just won't work
+          }
         }
 
         // Generate a session key for the store
         const sessionKey = `${name}:${Date.now()}`;
         setSession(sessionKey, cmd);
 
-        // Send session info as first event
+        // Send session info as first event (include spriteSessionId for reconnect)
         controller.enqueue(
           encoder.encode(
-            `event: session\ndata: ${JSON.stringify({ sessionKey })}\n\n`
+            `event: session\ndata: ${JSON.stringify({ sessionKey, spriteSessionId })}\n\n`
           )
         );
+
+        // Send keepalive comments to prevent proxy/browser timeout
+        keepaliveTimer = setInterval(() => {
+          try {
+            controller.enqueue(encoder.encode(": keepalive\n\n"));
+          } catch {
+            // stream closed
+          }
+        }, KEEPALIVE_INTERVAL_MS);
 
         // Pipe stdout
         cmd.stdout.on("data", (data: Buffer) => {
@@ -77,6 +106,7 @@ export async function GET(
 
         // Handle exit
         cmd.wait().then((exitCode) => {
+          if (keepaliveTimer) clearInterval(keepaliveTimer);
           try {
             controller.enqueue(
               encoder.encode(
@@ -90,11 +120,13 @@ export async function GET(
           deleteSession(sessionKey);
         });
 
-        // Handle client disconnect
+        // Handle client disconnect — clean up in-memory store but leave tmux session alive
         request.signal.addEventListener("abort", () => {
+          if (keepaliveTimer) clearInterval(keepaliveTimer);
           deleteSession(sessionKey);
         });
       } catch (error) {
+        if (keepaliveTimer) clearInterval(keepaliveTimer);
         const message =
           error instanceof Error ? error.message : "Unknown error";
         controller.enqueue(
