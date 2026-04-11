@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { listSprites, stopSprite } from "@/app/actions/sprites";
+import { startRemoteControl } from "@/app/actions/remote-control";
 import { SpriteStatusBadge } from "./sprite-status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowRight, Square } from "lucide-react";
+import { ArrowRight, Play, Square } from "lucide-react";
+import { toast } from "sonner";
 import { ProvisioningBadge } from "./provisioning-badge";
 import type { ProvisioningStatus } from "@/lib/github";
 
@@ -45,6 +47,23 @@ export function SpriteTable({
   function handleStop(name: string) {
     startTransition(async () => {
       await stopSprite(name);
+      const updated = await listSprites();
+      setSprites(updated);
+    });
+  }
+
+  function handleRemoteControl(name: string) {
+    startTransition(async () => {
+      const result = await startRemoteControl(name);
+      if (result.ok) {
+        toast.success("Remote control started", {
+          description: `Claude is running on ${name}`,
+        });
+      } else {
+        toast.error("Failed to start remote control", {
+          description: result.error,
+        });
+      }
       const updated = await listSprites();
       setSprites(updated);
     });
@@ -90,6 +109,15 @@ export function SpriteTable({
             </TableCell>
             <TableCell className="text-right">
               <div className="flex items-center justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleRemoteControl(sprite.name)}
+                  disabled={isPending}
+                >
+                  <Play className="h-4 w-4" />
+                  RC
+                </Button>
                 {sprite.status === "running" && (
                   <Button
                     variant="ghost"
