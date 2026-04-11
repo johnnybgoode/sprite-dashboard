@@ -25,6 +25,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ArrowRight, Square, Trash2 } from "lucide-react";
+import { ProvisioningBadge } from "./provisioning-badge";
+import type { ProvisioningStatus } from "@/lib/github";
 
 export type SpriteRow = {
   name: string;
@@ -34,7 +36,13 @@ export type SpriteRow = {
   updatedAt: string | null;
 };
 
-export function SpriteTable({ initialSprites }: { initialSprites: SpriteRow[] }) {
+export function SpriteTable({
+  initialSprites,
+  provisioningMap = {},
+}: {
+  initialSprites: SpriteRow[];
+  provisioningMap?: Record<string, ProvisioningStatus>;
+}) {
   const [sprites, setSprites] = useState(initialSprites);
   const [isPending, startTransition] = useTransition();
 
@@ -77,6 +85,7 @@ export function SpriteTable({ initialSprites }: { initialSprites: SpriteRow[] })
         <TableRow>
           <TableHead>Name</TableHead>
           <TableHead>Status</TableHead>
+          <TableHead>Provisioning</TableHead>
           <TableHead>Config</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
@@ -87,6 +96,11 @@ export function SpriteTable({ initialSprites }: { initialSprites: SpriteRow[] })
             <TableCell className="font-mono">{sprite.name}</TableCell>
             <TableCell>
               <SpriteStatusBadge status={sprite.status} />
+            </TableCell>
+            <TableCell>
+              {provisioningMap[sprite.name] ? (
+                <ProvisioningBadge status={provisioningMap[sprite.name]} />
+              ) : null}
             </TableCell>
             <TableCell className="font-mono text-xs text-muted-foreground">
               {sprite.config

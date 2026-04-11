@@ -1,8 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { getClient } from "@/lib/sprites";
-import { SpriteTable } from "@/components/sprites/sprite-table";
-import { CreateSpriteDialog } from "@/components/sprites/create-sprite-dialog";
+import { SpritesPageClient } from "@/components/sprites/sprites-page-client";
 
 export default async function SpritesPage() {
   const client = getClient();
@@ -16,13 +15,5 @@ export default async function SpritesPage() {
     updatedAt: s.updatedAt?.toISOString() ?? null,
   }));
 
-  return (
-    <div>
-      <div className="flex items-center justify-between pb-4">
-        <h2 className="text-xl font-semibold">Sprites</h2>
-        <CreateSpriteDialog />
-      </div>
-      <SpriteTable initialSprites={initialSprites} />
-    </div>
-  );
+  return <SpritesPageClient initialSprites={initialSprites} />;
 }
