@@ -1,7 +1,7 @@
 // src/components/sprites/sprites-page-client.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SpriteTable, SpriteRow } from "./sprite-table";
 import { CreateSpriteDialog } from "./create-sprite-dialog";
 import { getProvisioningMap } from "@/app/actions/provisioning";
@@ -16,6 +16,9 @@ export function SpritesPageClient({
   const [provisioningMap, setProvisioningMap] = useState<
     Record<string, ProvisioningStatus>
   >({});
+
+  const mapRef = useRef(provisioningMap);
+  mapRef.current = provisioningMap;
 
   // Rehydrate provisioning state from GH Actions runs on mount,
   // then poll every 5s while any entries are still pending/running.
@@ -32,13 +35,10 @@ export function SpritesPageClient({
     refresh();
 
     const interval = setInterval(() => {
-      setProvisioningMap((prev) => {
-        const hasActive = Object.values(prev).some(
-          (s) => s.phase === "pending" || s.phase === "running"
-        );
-        if (hasActive) refresh();
-        return prev;
-      });
+      const hasActive = Object.values(mapRef.current).some(
+        (s) => s.phase === "pending" || s.phase === "running"
+      );
+      if (hasActive) refresh();
     }, 5000);
 
     return () => {

@@ -27,8 +27,10 @@ export function CreateSpriteDialog({ onProvisioning }: CreateSpriteDialogProps) 
     async (_prev: unknown, formData: FormData) => {
       const result = await createSprite(formData);
       if (result.dispatchedAt) {
-        onProvisioning(result.name, result.dispatchedAt);
         setOpen(false);
+        // Defer parent state update to avoid "setState during render" conflict
+        // with Router re-render triggered by revalidatePath in the server action
+        queueMicrotask(() => onProvisioning(result.name, result.dispatchedAt!));
       } else {
         toast.error("Provisioning failed to start", {
           description: result.error ?? "Could not trigger the provisioning workflow.",
