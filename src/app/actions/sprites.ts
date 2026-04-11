@@ -3,6 +3,7 @@
 import { requireAuth } from "@/lib/dev-auth";
 import { getClient, getSprite } from "@/lib/sprites";
 import { revalidatePath } from "next/cache";
+import { triggerProvisioningWorkflow } from "@/lib/github";
 
 export async function listSprites() {
   await requireAuth();
@@ -18,7 +19,9 @@ export async function listSprites() {
   }));
 }
 
-export async function createSprite(formData: FormData) {
+export async function createSprite(
+  formData: FormData
+): Promise<{ name: string; dispatchedAt: string | null; error: string | null }> {
   await requireAuth();
 
   const name = formData.get("name") as string;
@@ -26,10 +29,20 @@ export async function createSprite(formData: FormData) {
   const cpus = parseInt(formData.get("cpus") as string) || 2;
   const storageGB = parseInt(formData.get("storageGB") as string) || 10;
   const region = (formData.get("region") as string) || undefined;
+  const repoUrl = (formData.get("repoUrl") as string) || "";
 
   const client = getClient();
   await client.createSprite(name, { ramMB, cpus, storageGB, region });
   revalidatePath("/sprites");
+
+  try {
+    const { dispatchedAt } = await triggerProvisioningWorkflow(name, repoUrl);
+    return { name, dispatchedAt, error: null };
+  } catch (err) {
+    console.error("Failed to trigger provisioning workflow:", err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return { name, dispatchedAt: null, error: message };
+  }
 }
 
 export async function deleteSprite(name: string) {
