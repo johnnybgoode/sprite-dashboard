@@ -15,13 +15,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 
-export function CreateSpriteDialog() {
+interface CreateSpriteDialogProps {
+  onProvisioning: (spriteName: string, dispatchedAt: string) => void;
+}
+
+export function CreateSpriteDialog({ onProvisioning }: CreateSpriteDialogProps) {
   const [open, setOpen] = useState(false);
   const [, action, isPending] = useActionState(
     async (_prev: unknown, formData: FormData) => {
-      await createSprite(formData);
-      setOpen(false);
+      const result = await createSprite(formData);
+      if (result.dispatchedAt) {
+        onProvisioning(result.name, result.dispatchedAt);
+        setOpen(false);
+      } else {
+        toast.error("Provisioning failed to start", {
+          description: result.error ?? "Could not trigger the provisioning workflow.",
+        });
+        // Dialog stays open so the user can retry
+      }
     },
     null
   );
@@ -95,6 +108,15 @@ export function CreateSpriteDialog() {
                 id="region"
                 name="region"
                 placeholder="e.g. us-east-1"
+                className="font-mono"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="repoUrl">GitHub repo URL (optional)</Label>
+              <Input
+                id="repoUrl"
+                name="repoUrl"
+                placeholder="https://github.com/you/your-repo"
                 className="font-mono"
               />
             </div>
