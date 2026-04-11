@@ -105,16 +105,13 @@ export async function getRecentProvisioningRuns(): Promise<
       continue;
     }
 
-    // Fetch individual run to get inputs (not available in list endpoint)
-    const detailRes = await fetch(
-      `https://api.github.com/repos/${OWNER}/${REPO}/actions/runs/${run.id}`,
-      { headers: ghHeaders() }
-    );
-    if (!detailRes.ok) continue;
-
-    const detail = await detailRes.json();
-    const spriteName = detail.inputs?.sprite_name;
+    // Extract sprite name from display_title (format: "Provision: <name>")
+    const match = run.display_title?.match(/^Provision:\s+(.+)$/);
+    const spriteName = match?.[1];
     if (!spriteName) continue;
+
+    // Only keep the most recent run per sprite (runs are newest-first)
+    if (result[spriteName]) continue;
 
     if (run.status === "completed") {
       result[spriteName] = {
