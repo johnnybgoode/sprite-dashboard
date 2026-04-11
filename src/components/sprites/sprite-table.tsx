@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { listSprites, deleteSprite, stopSprite } from "@/app/actions/sprites";
+import { listSprites, stopSprite } from "@/app/actions/sprites";
 import { SpriteStatusBadge } from "./sprite-status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,18 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { ArrowRight, Square, Trash2 } from "lucide-react";
+import { ArrowRight, Square } from "lucide-react";
 import { ProvisioningBadge } from "./provisioning-badge";
 import type { ProvisioningStatus } from "@/lib/github";
 
@@ -56,14 +45,6 @@ export function SpriteTable({
   function handleStop(name: string) {
     startTransition(async () => {
       await stopSprite(name);
-      const updated = await listSprites();
-      setSprites(updated);
-    });
-  }
-
-  function handleDelete(name: string) {
-    startTransition(async () => {
-      await deleteSprite(name);
       const updated = await listSprites();
       setSprites(updated);
     });
@@ -120,30 +101,6 @@ export function SpriteTable({
                     Stop
                   </Button>
                 )}
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="sm" className="text-destructive">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete {sprite.name}?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will permanently delete the sprite and all its data.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => handleDelete(sprite.name)}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
                 <Button variant="ghost" size="sm" asChild>
                   <Link href={`/sprites/${sprite.name}`}>
                     Detail

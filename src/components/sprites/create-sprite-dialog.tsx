@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { createSprite } from "@/app/actions/sprites";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +23,9 @@ interface CreateSpriteDialogProps {
 
 export function CreateSpriteDialog({ onProvisioning }: CreateSpriteDialogProps) {
   const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [repoUrl, setRepoUrl] = useState("https://github.com/johnnybgoode/");
+  const repoManuallyEdited = useRef(false);
   const [, action, isPending] = useActionState(
     async (_prev: unknown, formData: FormData) => {
       const result = await createSprite(formData);
@@ -41,8 +44,33 @@ export function CreateSpriteDialog({ onProvisioning }: CreateSpriteDialogProps) 
     null
   );
 
+  function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const newName = e.target.value;
+    setName(newName);
+    if (!repoManuallyEdited.current) {
+      setRepoUrl(`https://github.com/johnnybgoode/${newName}`);
+    }
+  }
+
+  function handleRepoUrlChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const newUrl = e.target.value;
+    setRepoUrl(newUrl);
+    if (newUrl === "") {
+      repoManuallyEdited.current = false;
+    } else {
+      repoManuallyEdited.current = true;
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen);
+      if (isOpen) {
+        setName("");
+        setRepoUrl("https://github.com/johnnybgoode/");
+        repoManuallyEdited.current = false;
+      }
+    }}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
@@ -66,6 +94,8 @@ export function CreateSpriteDialog({ onProvisioning }: CreateSpriteDialogProps) 
                 placeholder="my-sprite"
                 required
                 className="font-mono"
+                value={name}
+                onChange={handleNameChange}
               />
             </div>
             <div className="grid grid-cols-3 gap-4">
@@ -118,8 +148,10 @@ export function CreateSpriteDialog({ onProvisioning }: CreateSpriteDialogProps) 
               <Input
                 id="repoUrl"
                 name="repoUrl"
-                placeholder="https://github.com/you/your-repo"
+                placeholder="https://github.com/johnnybgoode/your-repo"
                 className="font-mono"
+                value={repoUrl}
+                onChange={handleRepoUrlChange}
               />
             </div>
           </div>
