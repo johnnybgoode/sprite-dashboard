@@ -17,10 +17,12 @@ export async function startRemoteControl(
       return { ok: true }; // Already running, nothing to do
     }
 
-    // Create a detachable tmux session running Claude in remote-control mode
+    // Create a detachable tmux session running Claude in remote-control mode.
+    // Use bash -l to get a login shell so ~/.bashrc and ~/.env are sourced.
     const cmd = sprite.createSession(
-      "claude",
-      ["--dangerously-skip-permissions", "--remote-control"],
+      "bash",
+      ["-l", "-c", "claude --dangerously-skip-permissions --remote-control"],
+      { tty: true },
     );
     await cmd.start();
 
