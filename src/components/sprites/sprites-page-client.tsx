@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { SpriteTable, SpriteRow } from "./sprite-table";
 import { CreateSpriteDialog } from "./create-sprite-dialog";
 import { getProvisioningMap } from "@/app/actions/provisioning";
+import { getRCStatus } from "@/app/actions/remote-control";
+import { listSprites } from "@/app/actions/sprites";
 import type { ProvisioningStatus } from "@/lib/github";
 
 export function SpritesPageClient({
@@ -12,33 +14,55 @@ export function SpritesPageClient({
 }: {
   initialSprites: SpriteRow[];
 }) {
-  // Maps sprite name -> provisioning status, rehydrated from GH on mount
   const [provisioningMap, setProvisioningMap] = useState<
     Record<string, ProvisioningStatus>
   >({});
+  const [rcMap, setRcMap] = useState<Record<string, boolean>>({});
+  const [sprites, setSprites] = useState(initialSprites);
 
   const mapRef = useRef(provisioningMap);
   mapRef.current = provisioningMap;
 
-  // Rehydrate provisioning state from GH Actions runs on mount,
-  // then poll every 5s while any entries are still pending/running.
   useEffect(() => {
     let cancelled = false;
 
-    async function refresh() {
+    async function refreshProvisioning() {
       const map = await getProvisioningMap();
       if (!cancelled) {
         setProvisioningMap((prev) => ({ ...prev, ...map }));
       }
     }
 
-    refresh();
+    async function refreshRC() {
+      const currentSprites = await listSprites();
+      if (cancelled) return;
+      setSprites(currentSprites);
+
+      const statuses: Record<string, boolean> = {};
+      // Only check RC for warm/running sprites to avoid waking cold ones
+      const activeSprites = currentSprites.filter(
+        (s) => s.status === "running" || s.status === "warm"
+      );
+      await Promise.all(
+        activeSprites.map(async (s) => {
+          const { active } = await getRCStatus(s.name);
+          statuses[s.name] = active;
+        })
+      );
+      if (!cancelled) {
+        setRcMap(statuses);
+      }
+    }
+
+    refreshProvisioning();
+    refreshRC();
 
     const interval = setInterval(() => {
-      const hasActive = Object.values(mapRef.current).some(
+      const hasActiveProvisioning = Object.values(mapRef.current).some(
         (s) => s.phase === "pending" || s.phase === "running"
       );
-      if (hasActive) refresh();
+      if (hasActiveProvisioning) refreshProvisioning();
+      refreshRC();
     }, 5000);
 
     return () => {
@@ -48,7 +72,6 @@ export function SpritesPageClient({
   }, []);
 
   function handleProvisioning(spriteName: string, _dispatchedAt: string) {
-    // Immediately show "pending" for the new sprite; polling will pick up the real status
     setProvisioningMap((prev) => ({ ...prev, [spriteName]: { phase: "pending" } }));
   }
 
@@ -59,8 +82,9 @@ export function SpritesPageClient({
         <CreateSpriteDialog onProvisioning={handleProvisioning} />
       </div>
       <SpriteTable
-        initialSprites={initialSprites}
+        initialSprites={sprites}
         provisioningMap={provisioningMap}
+        rcMap={rcMap}
       />
     </div>
   );
