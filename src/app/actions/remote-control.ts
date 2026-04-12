@@ -52,6 +52,20 @@ export async function stopRemoteControl(
   }
 }
 
+export async function pingSprite(
+  spriteName: string
+): Promise<{ ok: boolean }> {
+  await requireAuth();
+
+  try {
+    const sprite = await getSprite(spriteName);
+    await sprite.exec("true");
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  }
+}
+
 export async function getRCStatus(
   spriteName: string
 ): Promise<{ active: boolean }> {
