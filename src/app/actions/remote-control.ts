@@ -2,6 +2,18 @@
 
 import { requireAuth } from "@/lib/dev-auth";
 import { getSprite } from "@/lib/sprites";
+import type { Sprite } from "@fly/sprites";
+
+const PUT_TASK_CMD =
+  "curl -fsS --unix-socket /.sprite/api.sock -X PUT -H 'Content-Type: application/json' -d '{\"expire\":\"1h\"}' http://sprite/v1/tasks/remote-control";
+
+const DELETE_TASK_CMD =
+  "curl -fsS --unix-socket /.sprite/api.sock -X DELETE http://sprite/v1/tasks/remote-control";
+
+async function taskCall(sprite: Sprite, method: "PUT" | "DELETE"): Promise<void> {
+  const cmd = method === "PUT" ? PUT_TASK_CMD : DELETE_TASK_CMD;
+  await sprite.execFile("bash", ["-c", cmd]);
+}
 
 export async function startRemoteControl(
   spriteName: string
@@ -27,12 +39,23 @@ export async function startRemoteControl(
     await cmd.start();
 
     // Don't await cmd.wait() — let it run detached
-    return { ok: true };
   } catch (err) {
     console.error("Failed to start remote control:", err);
     const message = err instanceof Error ? err.message : "Unknown error";
     return { ok: false, error: message };
   }
+
+  // Register the keepalive Task — separate try/catch so a task failure is its own error
+  try {
+    const sprite = await getSprite(spriteName);
+    await taskCall(sprite, "PUT");
+  } catch (err) {
+    console.error("Failed to register keepalive task:", err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return { ok: false, error: `Session started but keepalive task failed: ${message}` };
+  }
+
+  return { ok: true };
 }
 
 export async function stopRemoteControl(
@@ -40,32 +63,28 @@ export async function stopRemoteControl(
 ): Promise<{ ok: boolean; error?: string }> {
   await requireAuth();
 
+  let killOk = true;
+  let killError: string | undefined;
+
   try {
     const sprite = await getSprite(spriteName);
-
-    // Kill the tmux session by executing tmux kill-session
-    await sprite.exec("tmux kill-session -t claude 2>/dev/null || true");
-
-    return { ok: true };
+    // Route through bash so 2>/dev/null and || true are parsed by a real shell
+    await sprite.execFile("bash", ["-c", "tmux kill-session -t claude 2>/dev/null || true"]);
   } catch (err) {
-    console.error("Failed to stop remote control:", err);
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return { ok: false, error: message };
+    console.error("Failed to kill RC session:", err);
+    killOk = false;
+    killError = err instanceof Error ? err.message : "Unknown error";
   }
-}
 
-export async function pingSprite(
-  spriteName: string
-): Promise<{ ok: boolean }> {
-  await requireAuth();
-
+  // Best-effort DELETE task — ignore failure (sprite may already be cold)
   try {
     const sprite = await getSprite(spriteName);
-    await sprite.exec("true");
-    return { ok: true };
+    await taskCall(sprite, "DELETE");
   } catch {
-    return { ok: false };
+    // Intentionally ignored
   }
+
+  return killOk ? { ok: true } : { ok: false, error: killError };
 }
 
 export async function getRCStatus(
