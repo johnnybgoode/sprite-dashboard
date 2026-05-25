@@ -95,15 +95,20 @@ curl command a hardcoded literal (constant `name`/`expire`; no interpolation). S
 section above for the required try/catch placement. Then:
 
 - **`startRemoteControl(name)`** — keep the existing "already running?" `listSessions` guard and the
-  detached `createSession("bash", ["-l","-c","claude --dangerously-skip-permissions --remote-control"], { tty: true })`;
-  then **`PUT`** the task (`{expire:"1h"}`) in its own try/catch so the sprite is held `running` the
-  moment we return. On task failure return `{ ok: false, error }` (keepalive is the point).
+  detached `createSession("bash", ["-l","-c","claude --dangerously-skip-permissions --remote-control"], { tty: true })`.
+  **Do NOT call `cmd.start()`** — `createSession()` (→ `spawn()`) already starts the command, so a
+  second `start()` throws `"Command already started"`, which previously aborted the action *before*
+  the task `PUT` (keepalive never registered). Attach a `cmd.on("error", …)` handler so an async
+  start/connection error doesn't crash on an unhandled emit. Then **`PUT`** the task (`{expire:"1h"}`)
+  in its own try/catch so the sprite is held `running` the moment we return; on task failure return
+  `{ ok: false, error }`.
 - **`stopRemoteControl(name)`** — kill the session **first**, then **`DELETE`** the task best-effort
-  (own try/catch, ignore failure). **Fix the existing kill while here:** the current
-  `sprite.exec("tmux kill-session -t claude 2>/dev/null || true")` is broken (exec splits on
-  whitespace, so the redirect/`|| true` are passed as literal argv to `tmux`, not interpreted) — route
-  it through `execFile("bash", ["-c", "tmux kill-session -t claude 2>/dev/null || true"])`. Return
-  `{ ok }`. (No `refreshRemoteControlTask` — refresh is owned by in-sprite hooks; see above.)
+  (own try/catch, ignore failure). The RC session created by `createSession()` is a **sprite-managed
+  exec session, not a user-`tmux` session** — so `tmux kill-session -t claude` can never reach it
+  (verified live: an RC session ran for 12 min while `tmux ls` showed no server). Kill the process
+  instead via `execFile("bash", ["-c", 'pkill -f "[c]laude --dangerously-skip-permissions --remote-control" || true'])`
+  (the `[c]` bracket trick stops `pkill` matching its own argv). Return `{ ok }`. (No
+  `refreshRemoteControlTask` — refresh is owned by in-sprite hooks; see above.)
 - **`getRCStatus(name)`** — unchanged (`listSessions`). Verified: this control-plane poll only briefly
   re-warms the sprite — it does **not** hold it `running`, so it does not keep the TTY session alive.
   The task is the sole keepalive.
@@ -143,6 +148,14 @@ The keepalive *refresh* (and its provisioning) lives in the playbooks plan
 `{ tasks: [{ name, started_at, expires_at }] }`; a registered task flips the sprite to `running` and
 holds it; with no task, control-plane polling only re-warms (sprite stays hibernated, TTY would die).
 The explicit `curl -fsS --unix-socket …` form works; `sprite-env curl` rejects `-f`.
+
+**End-to-end UI cycle verified (2026-05-25, clean sprite `rc-keepalive-test`, Playwright):** Idle
+("RC") → click → **Active** ("Stop RC", status `running`, `remote-control` task registered with a 1h
+expiry) → click Stop RC → **Idle** (session killed, task deleted). This run surfaced and fixed two
+pre-existing bugs: the redundant `cmd.start()` (broke start + skipped the task `PUT`) and the
+`tmux kill-session` stop (couldn't reach the sprite-managed exec session) — see Implementation §1.
+Stop latency dropped from ~35s (tmux-kill hang) to ~11s (two sequential exec round-trips; acceptable,
+could be combined later).
 
 Remaining checks during implementation:
 

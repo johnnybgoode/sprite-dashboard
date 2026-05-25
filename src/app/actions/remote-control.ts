@@ -29,16 +29,19 @@ export async function startRemoteControl(
       return { ok: true }; // Already running, nothing to do
     }
 
-    // Create a detachable tmux session running Claude in remote-control mode.
-    // Use bash -l to get a login shell so ~/.bashrc and ~/.env are sourced.
+    // Create a detachable session running Claude in remote-control mode.
+    // Use bash -l for a login shell so ~/.bashrc and ~/.env are sourced.
+    //
+    // NOTE: createSession() auto-starts the command (via spawn → cmd.start()).
+    // Calling cmd.start() again throws "Command already started", so we must not.
     const cmd = sprite.createSession(
       "bash",
       ["-l", "-c", "claude --dangerously-skip-permissions --remote-control"],
       { tty: true },
     );
-    await cmd.start();
-
-    // Don't await cmd.wait() — let it run detached
+    // Surface async start/connection errors instead of crashing on an unhandled
+    // 'error' emit. Don't await cmd.wait() — let it run detached.
+    cmd.on("error", (e) => console.error("RC session error:", e));
   } catch (err) {
     console.error("Failed to start remote control:", err);
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -68,8 +71,14 @@ export async function stopRemoteControl(
 
   try {
     const sprite = await getSprite(spriteName);
-    // Route through bash so 2>/dev/null and || true are parsed by a real shell
-    await sprite.execFile("bash", ["-c", "tmux kill-session -t claude 2>/dev/null || true"]);
+    // RC sessions created by createSession() are sprite-managed exec sessions, not
+    // user-tmux sessions — so `tmux kill-session` can't reach them. Kill the Claude
+    // process directly. The `[c]laude` bracket trick stops pkill from matching its
+    // own command line; `|| true` keeps a no-match from being a non-zero exit.
+    await sprite.execFile("bash", [
+      "-c",
+      'pkill -f "[c]laude --dangerously-skip-permissions --remote-control" || true',
+    ]);
   } catch (err) {
     console.error("Failed to kill RC session:", err);
     killOk = false;
