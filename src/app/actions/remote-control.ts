@@ -13,9 +13,17 @@ export async function startRemoteControl(
 	try {
 		const sprite = await getSprite(spriteName);
 
-		// Check if a session is already running
-		const sessions = await sprite.listSessions();
-		if (sessions.some((s) => s.isActive)) {
+		// Check if a session is already running. RC runs as a detached tmux session
+		// named "claude" (created by start-rc), so check with `tmux has-session` —
+		// listSessions() only sees sprite exec sessions, not tmux sessions. Without
+		// this, a duplicate start would hit start-rc's `tmux new-session -s claude`
+		// and fail on the name collision. exec only wakes a *cold* sprite (which has
+		// no RC session anyway), so this check is safe.
+		const alreadyRunning = await sprite
+			.exec("tmux has-session -t claude")
+			.then(() => true)
+			.catch(() => false);
+		if (alreadyRunning) {
 			return { ok: true }; // Already running, nothing to do
 		}
 
