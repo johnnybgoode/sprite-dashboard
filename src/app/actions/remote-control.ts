@@ -22,12 +22,12 @@ export async function startRemoteControl(
 	// this, a duplicate start would hit start-rc's `tmux new-session -s claude`
 	// and fail on the name collision. exec only wakes a *cold* sprite (which has
 	// no RC session anyway), so this check is safe.
+	let sessionExists = false;
 	try {
 		await execWithTimeout(sprite, "tmux", ["has-session", "-t", "claude"], {
 			timeoutMs: STATUS_TIMEOUT_MS,
 		});
-		// Resolved (exit 0) ⇒ session already exists — nothing to do.
-		return { ok: true };
+		sessionExists = true; // exit 0 ⇒ session already exists
 	} catch (e) {
 		if (e instanceof ExecTimeoutError) {
 			// Timed out verifying state — do NOT proceed; a duplicate tmux new-session
@@ -37,33 +37,41 @@ export async function startRemoteControl(
 				error: "Couldn't verify remote-control state, try again",
 			};
 		}
-		// ExecError (non-zero exit) ⇒ no session — proceed to create one.
+		// ExecError (non-zero exit) ⇒ no session.
 	}
 
-	try {
-		// TODO If existing session: attach() - don't duplicate
-		// Note ^ must attach tmux too.
+	// Create the session only if one isn't already running. We do NOT return
+	// early when it exists: stop deletes the keepalive task but leaves the tmux
+	// session, so a re-start must fall through and (re)register the task below —
+	// otherwise RC would have no keepalive and the sprite would warm and drop it.
+	if (!sessionExists) {
+		try {
+			// TODO If existing session: attach() - don't duplicate
+			// Note ^ must attach tmux too.
 
-		// Create a detachable session running Claude in remote-control mode.
-		// Use bash -l for a login shell so ~/.bashrc and ~/.env are sourced.
-		//
-		// NOTE: createSession() auto-starts the command (via spawn → cmd.start()).
-		// Calling cmd.start() again throws "Command already started", so we must not.
+			// Create a detachable session running Claude in remote-control mode.
+			// Use bash -l for a login shell so ~/.bashrc and ~/.env are sourced.
+			//
+			// NOTE: createSession() auto-starts the command (via spawn → cmd.start()).
+			// Calling cmd.start() again throws "Command already started", so we must not.
 
-		const cmd = sprite.createSession("bash", ["-l", "-c", "start-rc"], {
-			tty: true,
-			detachable: true,
-		});
-		// Surface async start/connection errors instead of crashing on an unhandled
-		// 'error' emit. Don't await cmd.wait() — let it run detached.
-		cmd.on("error", (e) => console.error("RC session error:", e));
-	} catch (err) {
-		console.error("Failed to start remote control:", err);
-		const message = err instanceof Error ? err.message : "Unknown error";
-		return { ok: false, error: message };
+			const cmd = sprite.createSession("bash", ["-l", "-c", "start-rc"], {
+				tty: true,
+				detachable: true,
+			});
+			// Surface async start/connection errors instead of crashing on an unhandled
+			// 'error' emit. Don't await cmd.wait() — let it run detached.
+			cmd.on("error", (e) => console.error("RC session error:", e));
+		} catch (err) {
+			console.error("Failed to start remote control:", err);
+			const message = err instanceof Error ? err.message : "Unknown error";
+			return { ok: false, error: message };
+		}
 	}
 
-	// Register the keepalive Task — separate try/catch so a task failure is its own error
+	// Register/refresh the keepalive Task — runs on BOTH paths (new session and
+	// pre-existing session), because `sprite-task add` is an idempotent upsert and
+	// a lingering session may have no task. Separate try/catch so it's its own error.
 	try {
 		await execWithTimeout(sprite, "sprite-task", ["add", TASK_NAME, "1h"], {
 			timeoutMs: MUTATION_TIMEOUT_MS,

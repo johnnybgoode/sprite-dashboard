@@ -167,6 +167,16 @@ in the Node server runtime (added `undici@^6` — v8 needs Node 21+, breaks Node
 
 Note: undici override is safe everywhere (undici underpins Node's native WS); it also helps any deploy on
 Node <22. The generous 25s timeouts + optimistic UI + status-downgrade remain the safety net if exec is ever
-slow again. Remaining known rough edge (pre-existing, out of scope, user aware): stop deletes the task but
-leaves the tmux session, so an immediate re-start short-circuits on the `tmux has-session` guard and returns
-ok without re-registering the task.
+slow again.
+
+---
+
+## Round 5 — start guard must still (re)register the task
+
+The round-1 `tmux has-session` guard returned `{ok:true}` early when the session existed, skipping
+`sprite-task add`. But stop deletes the task and **leaves the tmux session**, so an immediate re-start
+short-circuited and left RC with NO keepalive task ⇒ the sprite warmed and RC died. Fix: the guard only sets a
+`sessionExists` flag; `createSession` is gated on `!sessionExists` (still no duplicate `tmux new-session`),
+but `sprite-task add` (an idempotent upsert) now runs on **both** paths. Verified live: with a pre-existing
+`claude` tmux session and no task, Start RC kept the session (no duplicate error) and registered the task
+(`startRemoteControl` 11.9s, task created). `src/app/actions/remote-control.ts`.
