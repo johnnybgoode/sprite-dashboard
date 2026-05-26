@@ -1,12 +1,7 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { listSprites, stopSprite } from "@/app/actions/sprites";
-import {
-  startRemoteControl,
-  stopRemoteControl,
-} from "@/app/actions/remote-control";
 import { SpriteStatusBadge } from "./sprite-status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +13,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ArrowRight, Loader2, Play, Square } from "lucide-react";
-import { toast } from "sonner";
 import { ProvisioningBadge } from "./provisioning-badge";
 import type { ProvisioningStatus } from "@/lib/github";
 
@@ -30,64 +24,37 @@ export type SpriteRow = {
   updatedAt: string | null;
 };
 
+type PendingKind = "stop" | "rc-start" | "rc-stop" | undefined;
+
 export function SpriteTable({
-  initialSprites,
+  sprites,
   provisioningMap = {},
   rcMap = {},
+  onStartRC,
+  onStopRC,
+  onStopSprite,
 }: {
-  initialSprites: SpriteRow[];
+  sprites: SpriteRow[];
   provisioningMap?: Record<string, ProvisioningStatus>;
   rcMap?: Record<string, boolean>;
+  onStartRC: (name: string) => Promise<{ ok: boolean; error?: string }>;
+  onStopRC: (name: string) => Promise<{ ok: boolean; error?: string }>;
+  onStopSprite: (name: string) => Promise<void>;
 }) {
-  const [sprites, setSprites] = useState(initialSprites);
-  const [isPending, startTransition] = useTransition();
-  const [rcStarting, setRcStarting] = useState<Record<string, boolean>>({});
+  // Per-row pending state so one slow/failed action disables ONLY its own row.
+  const [pending, setPending] = useState<Record<string, PendingKind>>({});
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      listSprites().then(setSprites).catch(() => {});
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  function handleStop(name: string) {
-    startTransition(async () => {
-      await stopSprite(name);
-      const updated = await listSprites();
-      setSprites(updated);
-    });
-  }
-
-  function handleStartRC(name: string) {
-    setRcStarting((prev) => ({ ...prev, [name]: true }));
-    startTransition(async () => {
-      const result = await startRemoteControl(name);
-      setRcStarting((prev) => ({ ...prev, [name]: false }));
-      if (result.ok) {
-        toast.success("Remote control started", {
-          description: `Claude is running on ${name}. Open the Claude app to connect.`,
-        });
-      } else {
-        toast.error("Failed to start remote control", {
-          description: result.error,
-        });
-      }
-      const updated = await listSprites();
-      setSprites(updated);
-    });
-  }
-
-  function handleStopRC(name: string) {
-    startTransition(async () => {
-      const result = await stopRemoteControl(name);
-      if (result.ok) {
-        toast.success("Remote control stopped");
-      } else {
-        toast.error("Failed to stop remote control", {
-          description: result.error,
-        });
-      }
-    });
+  async function run(
+    name: string,
+    kind: Exclude<PendingKind, undefined>,
+    fn: () => Promise<unknown>,
+  ) {
+    setPending((p) => ({ ...p, [name]: kind }));
+    try {
+      await fn();
+    } finally {
+      setPending((p) => ({ ...p, [name]: undefined }));
+    }
   }
 
   if (sprites.length === 0) {
@@ -114,7 +81,7 @@ export function SpriteTable({
       <TableBody>
         {sprites.map((sprite) => {
           const isRCActive = rcMap[sprite.name] ?? false;
-          const isRCStarting = rcStarting[sprite.name] ?? false;
+          const p = pending[sprite.name];
 
           return (
             <TableRow key={sprite.name}>
@@ -134,7 +101,7 @@ export function SpriteTable({
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-2">
-                  {isRCStarting ? (
+                  {p === "rc-start" ? (
                     <Button variant="ghost" size="sm" disabled>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Starting
@@ -144,8 +111,8 @@ export function SpriteTable({
                       variant="ghost"
                       size="sm"
                       className="text-destructive"
-                      onClick={() => handleStopRC(sprite.name)}
-                      disabled={isPending}
+                      onClick={() => run(sprite.name, "rc-stop", () => onStopRC(sprite.name))}
+                      disabled={p !== undefined}
                     >
                       <Square className="h-4 w-4" />
                       Stop RC
@@ -154,8 +121,8 @@ export function SpriteTable({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleStartRC(sprite.name)}
-                      disabled={isPending}
+                      onClick={() => run(sprite.name, "rc-start", () => onStartRC(sprite.name))}
+                      disabled={p !== undefined}
                     >
                       <Play className="h-4 w-4" />
                       RC
@@ -165,8 +132,8 @@ export function SpriteTable({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleStop(sprite.name)}
-                      disabled={isPending}
+                      onClick={() => run(sprite.name, "stop", () => onStopSprite(sprite.name))}
+                      disabled={p !== undefined}
                     >
                       <Square className="h-4 w-4" />
                       Stop
