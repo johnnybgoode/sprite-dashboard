@@ -1,11 +1,13 @@
 import { getSprite } from "@/lib/sprites";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { UpgradeButton } from "@/components/upgrade/upgrade-button";
+import { DeleteSpriteButton } from "@/components/sprites/delete-sprite-button";
 
 export const dynamic = "force-dynamic";
 
-export default async function UpgradePage({
+export default async function ActionsPage({
   params,
 }: {
   params: Promise<{ name: string }>;
@@ -15,12 +17,12 @@ export default async function UpgradePage({
   const config = sprite.config;
 
   return (
-    <div className="grid gap-6 max-w-xl">
+    <div className="space-y-6 max-w-xl">
       <Card>
         <CardHeader>
-          <CardTitle>Current Configuration</CardTitle>
+          <CardTitle className="text-base">Upgrade</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
             {config?.cpus && (
               <Badge variant="secondary" className="font-mono">
@@ -43,10 +45,20 @@ export default async function UpgradePage({
               </Badge>
             )}
           </div>
+          <UpgradeButton spriteName={name} />
         </CardContent>
       </Card>
 
-      <UpgradeButton spriteName={name} />
+      <Separator />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base text-destructive">Danger Zone</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DeleteSpriteButton name={name} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

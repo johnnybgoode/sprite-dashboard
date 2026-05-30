@@ -19,7 +19,7 @@ export default async function SpriteLayout({
 
   return (
     <div>
-      <div className="mb-6 space-y-4">
+      <div className="mb-4 md:mb-6 space-y-3 md:space-y-4">
         <Link
           href="/sprites"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -27,11 +27,11 @@ export default async function SpriteLayout({
           <ArrowLeft className="h-4 w-4" />
           Back to sprites
         </Link>
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold font-mono">{sprite.name}</h1>
+        <div className="flex flex-wrap items-center gap-2 md:gap-4">
+          <h1 className="text-xl md:text-2xl font-bold font-mono break-all">{sprite.name}</h1>
           <SpriteStatusBadge status={sprite.status ?? "unknown"} />
           {sprite.config && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {sprite.config.cpus && (
                 <Badge variant="secondary" className="font-mono text-xs">
                   {sprite.config.cpus} CPU
@@ -57,7 +57,7 @@ export default async function SpriteLayout({
         </div>
       </div>
       <SpriteDetailTabs name={name} />
-      <div className="mt-4">{children}</div>
+      <div className="mt-4 min-w-0 max-w-full">{children}</div>
     </div>
   );
 }

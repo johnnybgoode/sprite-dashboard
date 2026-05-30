@@ -10,8 +10,12 @@ const statusConfig: Record<string, { color: string; pulse: boolean }> = {
   error: { color: "bg-terminal-red", pulse: false },
 };
 
+function configFor(status: string) {
+  return statusConfig[status] ?? { color: "bg-muted-foreground", pulse: false };
+}
+
 export function SpriteStatusBadge({ status }: { status: string }) {
-  const config = statusConfig[status] ?? { color: "bg-muted-foreground", pulse: false };
+  const config = configFor(status);
 
   return (
     <Badge variant="outline" className="gap-1.5 font-mono text-xs">
@@ -24,5 +28,27 @@ export function SpriteStatusBadge({ status }: { status: string }) {
       />
       {status}
     </Badge>
+  );
+}
+
+export function SpriteStatusDot({
+  status,
+  className,
+}: {
+  status: string;
+  className?: string;
+}) {
+  const config = configFor(status);
+  return (
+    <span
+      aria-label={`status: ${status}`}
+      title={status}
+      className={cn(
+        "inline-block h-2.5 w-2.5 rounded-full shrink-0",
+        config.color,
+        config.pulse && "animate-pulse",
+        className
+      )}
+    />
   );
 }
