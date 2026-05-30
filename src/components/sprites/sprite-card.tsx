@@ -44,7 +44,7 @@ export function SpriteCard({
         type="button"
         onClick={onToggle}
         aria-expanded={expanded}
-        className="flex w-full items-center gap-3 px-3 py-3 text-left min-h-[44px]"
+        className="flex w-full items-center gap-3 px-3 py-3 text-left min-h-[44px] cursor-pointer touch-manipulation"
       >
         <ChevronIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
         <SpriteStatusDot status={sprite.status} />
