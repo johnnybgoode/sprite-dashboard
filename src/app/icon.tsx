@@ -1,7 +1,9 @@
 import { ImageResponse } from "next/og";
 
-export const size = { width: 32, height: 32 };
+export const size = { width: 64, height: 64 };
 export const contentType = "image/png";
+
+const LINES = ["  __", "<(✦ )___", " (  ._>", "  `--´"];
 
 export default function Icon() {
   return new ImageResponse(
@@ -11,22 +13,25 @@ export default function Icon() {
           width: "100%",
           height: "100%",
           display: "flex",
-          alignItems: "center",
+          flexDirection: "column",
           justifyContent: "center",
+          alignItems: "flex-start",
           background: "black",
+          color: "#fdc700",
+          fontFamily:
+            "ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
+          fontSize: 11,
+          fontWeight: 600,
+          lineHeight: "11px",
+          paddingLeft: 6,
+          paddingTop: 2,
+          whiteSpace: "pre",
+          letterSpacing: 0,
         }}
       >
-        <svg
-          width="32"
-          height="32"
-          viewBox="0 0 32 32"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <circle cx="13" cy="14" r="8" fill="#ffd400" />
-          <circle cx="15" cy="12" r="1.6" fill="#000" />
-          <path d="M21 14 L29 13 L29 16 L21 16 Z" fill="#ff8a00" />
-          <path d="M5 21 Q9 19 13 21 L13 23 Q9 22 5 23 Z" fill="#ffd400" />
-        </svg>
+        {LINES.map((line) => (
+          <div key={line}>{line}</div>
+        ))}
       </div>
     ),
     size,

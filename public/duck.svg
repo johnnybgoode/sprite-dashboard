@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="10" fill="#000000"/>
+  <text
+    x="6"
+    y="14"
+    font-family="ui-monospace, 'Geist Mono', 'SF Mono', Menlo, monospace"
+    font-size="11"
+    font-weight="600"
+    fill="#fdc700"
+    xml:space="preserve"
+  ><tspan x="6" dy="0">  __</tspan><tspan x="6" dy="11">&lt;(✦ )___</tspan><tspan x="6" dy="11"> (  ._&gt;</tspan><tspan x="6" dy="11">  `--´</tspan></text>
+</svg>
