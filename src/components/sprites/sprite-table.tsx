@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { SpriteStatusBadge } from "./sprite-status-badge";
+import { SpriteStatusBadge, type SpriteStatus } from "./sprite-status-badge";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -19,7 +19,7 @@ import type { ProvisioningStatus } from "@/lib/github";
 
 export type SpriteRow = {
   name: string;
-  status: string;
+  status: SpriteStatus;
   config: { ramMB?: number; cpus?: number; region?: string; storageGB?: number } | null;
   createdAt: string | null;
   updatedAt: string | null;

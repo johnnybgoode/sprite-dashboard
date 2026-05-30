@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getSprite } from "@/lib/sprites";
 import { SpriteStatusBadge } from "@/components/sprites/sprite-status-badge";
+import { normalizeStatus } from "@/lib/sprite-status";
 import { Badge } from "@/components/ui/badge";
 import { SpriteDetailTabs } from "@/components/detail/sprite-detail-tabs";
 
@@ -29,7 +30,7 @@ export default async function SpriteLayout({
         </Link>
         <div className="flex flex-wrap items-center gap-2 md:gap-4">
           <h1 className="text-xl md:text-2xl font-bold font-mono break-all">{sprite.name}</h1>
-          <SpriteStatusBadge status={sprite.status ?? "unknown"} />
+          <SpriteStatusBadge status={normalizeStatus(sprite.status)} />
           {sprite.config && (
             <div className="flex flex-wrap gap-2">
               {sprite.config.cpus && (

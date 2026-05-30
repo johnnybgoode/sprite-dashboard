@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { SpriteStatus } from "@/components/sprites/sprite-status-badge";
 
 type SpriteInfoProps = {
   name: string;
   id?: string;
-  status: string;
+  status: SpriteStatus;
   config?: {
     ramMB?: number;
     cpus?: number;

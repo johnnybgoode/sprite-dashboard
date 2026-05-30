@@ -66,7 +66,7 @@ export function SpriteCard({
 
           <div className="flex flex-wrap gap-2">
             {pending === "rc-start" ? (
-              <Button variant="outline" size="sm" disabled className="min-h-[40px]">
+              <Button variant="outline" size="sm" disabled className="min-h-[40px] min-w-[88px]">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Starting
               </Button>
@@ -74,7 +74,7 @@ export function SpriteCard({
               <Button
                 variant="outline"
                 size="sm"
-                className="text-destructive min-h-[40px]"
+                className="text-destructive min-h-[40px] min-w-[88px]"
                 onClick={onStopRC}
                 disabled={pending !== undefined}
               >
@@ -85,7 +85,7 @@ export function SpriteCard({
               <Button
                 variant="outline"
                 size="sm"
-                className="min-h-[40px]"
+                className="min-h-[40px] min-w-[88px]"
                 onClick={onStartRC}
                 disabled={pending !== undefined}
               >
@@ -97,7 +97,7 @@ export function SpriteCard({
               <Button
                 variant="outline"
                 size="sm"
-                className="min-h-[40px]"
+                className="min-h-[40px] min-w-[88px]"
                 onClick={onStopSprite}
                 disabled={pending !== undefined}
               >
@@ -105,7 +105,7 @@ export function SpriteCard({
                 Stop
               </Button>
             )}
-            <Button variant="outline" size="sm" asChild className="min-h-[40px]">
+            <Button variant="outline" size="sm" asChild className="min-h-[40px] min-w-[88px]">
               <Link href={`/sprites/${sprite.name}`}>
                 Detail
                 <ArrowRight className="ml-1 h-4 w-4" />

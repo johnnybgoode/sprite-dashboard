@@ -4,6 +4,7 @@ import { requireAuth } from "@/lib/dev-auth";
 import { getClient, getSprite } from "@/lib/sprites";
 import { revalidatePath } from "next/cache";
 import { triggerProvisioningWorkflow } from "@/lib/github";
+import { normalizeStatus } from "@/lib/sprite-status";
 
 export async function listSprites() {
   await requireAuth();
@@ -12,7 +13,7 @@ export async function listSprites() {
   const sprites = await client.listAllSprites();
   return sprites.map((s) => ({
     name: s.name,
-    status: s.status ?? "unknown",
+    status: normalizeStatus(s.status),
     config: s.config ?? null,
     createdAt: s.createdAt?.toISOString() ?? null,
     updatedAt: s.updatedAt?.toISOString() ?? null,
@@ -58,6 +59,16 @@ export async function stopSprite(name: string) {
 
   const sprite = await getSprite(name);
   await sprite.exec("poweroff");
+  revalidatePath("/sprites");
+}
+
+export async function startSprite(name: string) {
+  await requireAuth();
+
+  // Sprites auto-wake on any exec — a no-op command is enough to trigger the
+  // transition from warm/stopped to running.
+  const sprite = await getSprite(name);
+  await sprite.exec("true");
   revalidatePath("/sprites");
 }
 

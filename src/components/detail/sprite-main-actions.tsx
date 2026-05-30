@@ -9,17 +9,18 @@ import {
   startRemoteControl,
   stopRemoteControl,
 } from "@/app/actions/remote-control";
-import { stopSprite } from "@/app/actions/sprites";
+import { startSprite, stopSprite } from "@/app/actions/sprites";
 import { useEffect } from "react";
+import type { SpriteStatus } from "@/components/sprites/sprite-status-badge";
 
-type Pending = "rc-start" | "rc-stop" | "stop" | undefined;
+type Pending = "rc-start" | "rc-stop" | "start" | "stop" | undefined;
 
 export function SpriteMainActions({
   name,
   status,
 }: {
   name: string;
-  status: string;
+  status: SpriteStatus;
 }) {
   const [pending, setPending] = useState<Pending>(undefined);
   const [rcActive, setRcActive] = useState<boolean | undefined>(undefined);
@@ -86,10 +87,26 @@ export function SpriteMainActions({
     }
   }
 
+  async function handleStart() {
+    setPending("start");
+    try {
+      await startSprite(name);
+      toast.success("Start requested");
+    } catch (e) {
+      toast.error("Failed to start sprite", {
+        description: e instanceof Error ? e.message : undefined,
+      });
+    } finally {
+      setPending(undefined);
+    }
+  }
+
+  const btn = "min-h-[40px] min-w-[110px]";
+
   return (
     <div className="flex flex-wrap gap-2">
       {pending === "rc-start" ? (
-        <Button variant="outline" disabled className="min-h-[40px]">
+        <Button variant="outline" disabled className={btn}>
           <Loader2 className="h-4 w-4 animate-spin" />
           Starting RC
         </Button>
@@ -98,7 +115,7 @@ export function SpriteMainActions({
           variant="outline"
           onClick={handleStopRC}
           disabled={pending !== undefined}
-          className="text-destructive min-h-[40px]"
+          className={`text-destructive ${btn}`}
         >
           <Square className="h-4 w-4" />
           Stop RC
@@ -108,19 +125,19 @@ export function SpriteMainActions({
           variant="outline"
           onClick={handleStartRC}
           disabled={pending !== undefined}
-          className="min-h-[40px]"
+          className={btn}
         >
           <Play className="h-4 w-4" />
           RC
         </Button>
       )}
 
-      {status === "running" && (
+      {status === "running" ? (
         <Button
           variant="outline"
           onClick={handleStop}
           disabled={pending !== undefined}
-          className="min-h-[40px]"
+          className={btn}
         >
           {pending === "stop" ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -128,6 +145,20 @@ export function SpriteMainActions({
             <Square className="h-4 w-4" />
           )}
           Stop
+        </Button>
+      ) : (
+        <Button
+          variant="outline"
+          onClick={handleStart}
+          disabled={pending !== undefined}
+          className={btn}
+        >
+          {pending === "start" ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Play className="h-4 w-4" />
+          )}
+          Start
         </Button>
       )}
     </div>
