@@ -17,7 +17,7 @@ export function ExecBar({ spriteName }: { spriteName: string }) {
     if (!command.trim()) return;
 
     startTransition(async () => {
-      const res = await execCommand(spriteName, command);
+      const res = await execCommand(spriteName, command.toLowerCase());
       setResult(res);
     });
   }
@@ -35,7 +35,11 @@ export function ExecBar({ spriteName }: { spriteName: string }) {
               onChange={(e) => setCommand(e.target.value)}
               placeholder="Enter command..."
               disabled={isPending}
-              className="font-mono bg-background border-border"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              className="font-mono bg-background border-border lowercase"
             />
             <Button type="submit" disabled={isPending || !command.trim()}>
               {isPending ? "Running..." : "Run"}
