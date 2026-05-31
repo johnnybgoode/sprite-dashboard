@@ -1,12 +1,12 @@
 import { ImageResponse } from "next/og";
 import { loadFreeMono } from "./fonts/load";
 
-export const size = { width: 64, height: 64 };
+export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
 const LINES = ["  __", "<(✦ )___", " (  ._>", "  `--´"];
 
-export default async function Icon() {
+export default async function AppleIcon() {
   const fontData = await loadFreeMono();
   return new ImageResponse(
     (
@@ -15,24 +15,28 @@ export default async function Icon() {
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
           justifyContent: "center",
-          alignItems: "flex-start",
+          alignItems: "center",
           background: "black",
           color: "#fdc700",
-          fontFamily: "FreeMono",
-          fontSize: 11,
-          fontWeight: 600,
-          lineHeight: "11px",
-          paddingLeft: 6,
-          paddingTop: 2,
-          whiteSpace: "pre",
-          letterSpacing: 0,
         }}
       >
-        {LINES.map((line) => (
-          <div key={line}>{line}</div>
-        ))}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            fontFamily: "FreeMono",
+            fontSize: 34,
+            fontWeight: 600,
+            lineHeight: "34px",
+            whiteSpace: "pre",
+            letterSpacing: 0,
+          }}
+        >
+          {LINES.map((line) => (
+            <div key={line}>{line}</div>
+          ))}
+        </div>
       </div>
     ),
     {
