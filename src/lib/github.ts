@@ -1,7 +1,10 @@
 // src/lib/github.ts
 
-const OWNER = "johnnybgoode";
-const REPO = "playbooks";
+// Repo that holds the provisioning workflow, in "owner/repo" form.
+// Configurable via PLAYBOOKS_REPO; defaults to johnnybgoode/playbooks.
+const [OWNER, REPO] = (
+  process.env.PLAYBOOKS_REPO || "johnnybgoode/playbooks"
+).split("/");
 const WORKFLOW_ID = "provision.yml";
 
 function ghHeaders() {
